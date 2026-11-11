@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OmegaMind: From Question to Answer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1efe8;--card:#fffdf7;--ink:#23221d;--mut:#6e6a5d;--line:#d8d3c4;--a:#2f6fa3;--b:#a2700f;--d:#b0446a;--c:#1d7a74;--fill:#e4dfd0;--code:#1a1d2b;--hh:56px;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1f1e1a;--card:#26251f;--ink:#e7e3d8;--mut:#9b978a;--line:#3d3b32;--a:#a9c4de;--b:#c4a64f;--d:#d495a8;--c:#7fc4bd;--fill:#4a473a;--code:#14151f;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#1f1e1a;--card:#26251f;--ink:#e7e3d8;--mut:#9b978a;--line:#3d3b32;--a:#a9c4de;--b:#c4a64f;--d:#d495a8;--c:#7fc4bd;--fill:#4a473a;--code:#14151f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:auto!important;-ms-overflow-style:none;scrollbar-width:none}*{box-sizing:border-box}
+html::-webkit-scrollbar,body::-webkit-scrollbar,#stage::-webkit-scrollbar,pre::-webkit-scrollbar{display:none;width:0;height:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Bricolage Grotesque",system-ui,sans-serif;-ms-overflow-style:none;scrollbar-width:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--card);z-index:20}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;height:var(--hh);background:var(--card);border-bottom:1px solid var(--line);padding:0 16px;display:flex;gap:12px;align-items:center}
+header b{font-size:16px;white-space:nowrap}header input{flex:1;min-width:0;font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button{font:inherit;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+#track{height:2600vh}
+#pin{position:sticky;top:calc(var(--hh) + env(safe-area-inset-top,0px));height:calc(100vh - var(--hh) - env(safe-area-inset-top,0px));display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,36%);gap:14px;padding:10px 16px}
+#left{display:flex;flex-direction:column;gap:8px;min-height:0}
+#stage{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;min-height:0;-ms-overflow-style:none;scrollbar-width:none}
+.bx{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px;min-width:0}.bx>small{display:block;color:var(--mut);font-size:11.5px;margin-bottom:3px}
+.r2{display:grid;gap:7px;grid-template-columns:1fr 1fr}
+.mono,.chip,.c,.met b,.bc{font:11.5px/1.45 "JetBrains Mono",ui-monospace,monospace}.mono{color:var(--mut);white-space:pre-wrap;word-break:break-all;min-height:1.45em}.tx{min-height:1.5em;white-space:pre-wrap;word-break:break-word}
+.chips{display:flex;flex-wrap:wrap;gap:4px}.chip{border:1px solid var(--line);border-radius:5px;padding:0 6px;opacity:0}.chip b{color:var(--a);margin-left:5px;font-weight:600}
+.lane{position:relative;height:4px;background:var(--line);border-radius:2px;margin:6px 0}.lane i{position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--a);opacity:0}
+.pips,.ops,.wb{display:flex;gap:2px;margin:4px 0}.pips i{flex:1;height:8px;border-radius:2px;background:var(--line)}.pips i.on{background:var(--a)}.pips i.dn{background:var(--fill)}
+.ops span{flex:1;text-align:center;font-size:10.5px;border:1px solid var(--line);border-radius:5px;padding:1px 2px;color:var(--mut)}.ops span.on{background:var(--a);color:var(--bg);border-color:var(--a)}
+.cr{display:flex;gap:2px;margin:2px 0;align-items:center}.cr em{font:10px "JetBrains Mono",monospace;color:var(--mut);width:54px;font-style:normal}.c{flex:1;text-align:center;border:1px solid var(--line);border-radius:4px;min-width:0;overflow:hidden;font-size:10px;opacity:.5}.c.h{opacity:1;background:var(--fill);border-color:var(--a)}
+.wb i{height:14px;background:var(--fill);border-radius:2px}.wb i.h{background:var(--a)}
+.kv{display:grid;gap:2px;margin-top:3px}.g{height:9px;background:var(--line);border-radius:2px}.g.k{background:var(--b)}.g.n{background:var(--d)}.g.r{background:var(--c)}
+.bars{display:flex;gap:8px;height:92px}.bc{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}.bw{flex:1;display:flex;align-items:flex-end;width:100%}.bw i{width:100%;background:var(--fill);border-radius:3px 3px 0 0;min-height:2px}.bc.p i{background:var(--a)}.bc.d{opacity:.3}.bc span{max-width:100%;overflow:hidden;white-space:pre}
+.mets{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px}.met small{color:var(--mut);font-size:11px;margin-right:4px}.met b{font-weight:600}
+#jm{position:sticky;top:0;z-index:2}#jn{display:flex;gap:4px}#jn span{flex:1;text-align:center;font-size:10.5px;line-height:1.25;border:1px solid var(--line);border-radius:7px;padding:3px 1px;color:var(--mut);min-width:0}#jn small{font:10px "JetBrains Mono",monospace}#jn span.on{border-color:var(--a);background:var(--fill);color:var(--ink)}#jr{position:relative;height:38px;border-bottom:2px solid var(--line);margin:2px 0 6px}#pd{position:absolute;top:2px;width:12px;height:12px;border-radius:50%;background:var(--a);transform:translateX(-50%);animation:pu 1s infinite}#pb{position:absolute;top:17px;transform:translateX(-50%);max-width:64%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:11.5px "JetBrains Mono",monospace;color:var(--a);border:1px solid var(--a);border-radius:5px;padding:0 6px;background:var(--card)}#jw{color:var(--ink)}@keyframes pu{50%{box-shadow:0 0 0 6px rgba(124,150,255,.25)}}#cap{min-height:3.2em;color:var(--mut);border-top:1px solid var(--line);padding-top:6px}
+#ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#sl{flex:1;min-width:110px;accent-color:var(--a)}#spd{font:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}#ctl label{font-size:11px;color:var(--mut);white-space:nowrap}
+#rail{display:flex;gap:4px;flex-wrap:wrap}#rail button{font-size:12px;padding:2px 8px}#rail button.on{background:var(--a);color:var(--bg);border-color:var(--a)}
+#code{background:var(--code);color:#d6dcf0;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.code-intro{padding:9px 14px 5px;color:#9aa6bd;font:600 10px "JetBrains Mono",monospace;letter-spacing:.08em}
+#cf{padding:9px 14px;border-bottom:1px solid #ffffff1f;font:600 12px "JetBrains Mono",monospace;color:#9fb0ff}
+pre{position:relative;margin:0;padding:8px 0;overflow:auto;flex:1;font:12px/1.55 "JetBrains Mono",monospace}.l{display:block;white-space:pre;padding:0 14px;border-left:3px solid transparent;opacity:.45}.l.on{opacity:1;background:rgba(124,150,255,.22);border-color:#7c96ff}
+@media(max-width:899px){#pin{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 30vh}.r2{grid-template-columns:1fr}header b{display:none}}
+
+/* Beginner-first token and journey explainer */
+.token-panel{padding:11px 12px 10px;overflow:hidden}
+.token-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.eyebrow{display:block;color:var(--a);font:600 10px/1.35 "JetBrains Mono",monospace;letter-spacing:.07em}
+.token-heading h3,.story-main h3{font-size:15px;line-height:1.2;margin:3px 0 4px;color:var(--ink)}
+.token-heading p,.story-main p{margin:0;color:var(--mut);font-size:12px;line-height:1.45}
+.demo-tag{flex:none;border:1px solid #c9ae77;background:#f5eddc;color:#73541c;border-radius:7px;padding:4px 7px;font-size:10px;font-weight:700}
+.token-labels{display:flex;justify-content:space-between;margin:10px 2px 4px;color:var(--mut);font-size:10px}
+.chips{display:flex;flex-wrap:wrap;gap:7px 8px;align-items:flex-start;min-height:30px}
+.token-pair{display:grid;grid-template-columns:minmax(52px,auto) 15px minmax(54px,auto);align-items:center;gap:3px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 5px;opacity:0;transform:translateY(8px) scale(.97);transition:opacity .35s ease,transform .4s cubic-bezier(.2,.8,.2,1),border-color .3s,background .3s;transition-delay:calc(var(--i,0)*35ms);}
+.token-pair.show{opacity:1;transform:translateY(0) scale(1)}
+.token-pair .piece{font:600 11px/1.25 "JetBrains Mono",monospace;color:var(--ink);overflow-wrap:anywhere;text-align:center;max-width:110px}
+.token-pair .down{font-size:12px;color:var(--a);text-align:center;animation:arrowNudge 1.3s ease-in-out infinite}
+.token-pair .tid{font:600 10px/1.25 "JetBrains Mono",monospace;color:var(--a);background:var(--card);border:1px solid var(--line);padding:3px 5px;border-radius:5px;white-space:nowrap;text-align:center}
+.token-pair.active{border-color:var(--a);background:var(--fill);box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 13%,transparent)}
+.token-more{align-self:center;color:var(--mut);font-size:10px;border:1px dashed var(--line);padding:5px 7px;border-radius:7px}
+.token-foot{display:flex;gap:7px;align-items:flex-start;border-top:1px solid var(--line);margin-top:9px;padding-top:7px;color:var(--mut);font-size:11px;line-height:1.4}
+.token-dot{width:8px;height:8px;border-radius:50%;background:var(--c);margin-top:4px;flex:none}
+#story{padding:11px 12px;overflow:hidden;min-height:166px}
+.story-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+#story-count{font:600 10px "JetBrains Mono",monospace;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:3px 7px}
+.story-main{display:flex;gap:10px;align-items:flex-start;min-height:54px}
+.story-icon{width:38px;height:38px;border-radius:10px;background:var(--fill);display:grid;place-items:center;flex:none;font:700 13px "JetBrains Mono",monospace;color:var(--a);animation:storyPop .45s ease}
+.story-main h3{font-size:14px;margin:0 0 4px}
+.story-main p{font-size:11.5px;max-width:760px}
+.story-flow{display:flex;align-items:stretch;gap:5px;margin:10px 0 8px;overflow:hidden}
+.flow-node{flex:1;min-width:0;position:relative;border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:6px 5px;text-align:center;opacity:.6;transition:all .35s ease}
+.flow-node .flow-symbol{display:block;font:600 10px "JetBrains Mono",monospace;color:var(--a);line-height:1.2;margin-bottom:3px}
+.flow-node b{display:block;font-size:10px;line-height:1.2;color:var(--ink);font-weight:700}
+.flow-node small{display:block;margin-top:2px;color:var(--mut);font-size:9px;line-height:1.2}
+.flow-node.active{opacity:1;border-color:var(--a);background:var(--fill);transform:translateY(-2px);box-shadow:0 3px 10px rgba(50,70,90,.08)}
+.flow-node.done{opacity:1;border-color:var(--c)}
+.flow-arrow{display:grid;place-items:center;color:var(--a);font-size:14px;flex:none;animation:arrowNudge 1.3s ease-in-out infinite}
+.story-takeaway{display:flex;gap:7px;align-items:flex-start;padding-top:7px;border-top:1px solid var(--line);color:var(--mut);font-size:10.5px;line-height:1.4}
+.story-takeaway b{flex:none;color:var(--c);font-size:10px}
+@keyframes arrowNudge{50%{transform:translateY(3px);opacity:.55}}
+@keyframes storyPop{from{transform:scale(.8);opacity:.3}to{transform:scale(1);opacity:1}}
+@media(max-width:899px){.token-heading{display:block}.demo-tag{display:inline-block;margin-top:6px}.token-pair{grid-template-columns:minmax(44px,auto) 12px minmax(48px,auto);padding:3px}.token-pair .piece{font-size:10px}.flow-node{padding:5px 3px}.flow-node b{font-size:9px}.flow-node small{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.token-pair,.flow-node,.story-icon,.flow-arrow,.token-pair .down{animation:none!important;transition:none!important}}
+
+
+/* Keep the token lesson readable without the flex layout collapsing it */
+#stage>.bx,#stage>.r2{flex-shrink:0}
+#jm{padding:6px 9px}
+#jm>small{font-size:10px;margin-bottom:2px}
+#jn span{font-size:9px;padding:2px 1px;line-height:1.12}
+#jn small{font-size:9px}
+#jr{height:27px;margin:1px 0 3px}
+#pb{top:12px;font-size:10px}
+#jw{font-size:11px;line-height:1.25}
+#stage>.r2:nth-child(2) .bx{padding:6px 9px}
+#stage>.r2:nth-child(2) .bx .tx{font-size:11px;line-height:1.3}
+.token-panel{padding:8px 10px}
+.token-heading h3{font-size:14px}
+.token-heading p{font-size:11px}
+.token-labels{margin:6px 2px 3px}
+.chips{gap:5px 6px}
+.token-pair{padding:3px 4px}
+.token-foot{font-size:10px;margin-top:6px;padding-top:5px}
+#story{min-height:0;padding:8px 10px}
+.story-head{margin-bottom:5px}
+.story-main{min-height:42px;gap:8px}
+.story-icon{width:32px;height:32px;font-size:12px}
+.story-main h3{font-size:13px}
+.story-main p{font-size:10.5px;line-height:1.3}
+.story-flow{margin:6px 0 6px;gap:4px}
+.flow-node{padding:4px 3px}
+.flow-node .flow-symbol{font-size:14px;margin-bottom:2px}
+.flow-node b{font-size:9px}
+.flow-node small{font-size:8px}
+.story-takeaway{padding-top:5px;font-size:9.5px}
+#stage>.bx:has(#l1){padding:6px 9px}
+/* Larger, more distinctive prediction and answer panels */
+.outcome-grid{align-items:stretch;gap:12px}
+.outcome-grid>.bx{min-height:250px;padding:16px 18px;position:relative;overflow:hidden}
+.outcome-grid>.bx::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--a);opacity:.8}
+.prediction-card{background:linear-gradient(145deg,var(--card) 0%,color-mix(in srgb,var(--a) 7%,var(--card)) 100%)}
+.answer-card{background:linear-gradient(145deg,var(--card) 0%,color-mix(in srgb,var(--c) 7%,var(--card)) 100%)}
+.answer-card::before{background:var(--c)!important}
+.result-kicker{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--a);font:600 10px/1.3 "JetBrains Mono",monospace;letter-spacing:.045em}
+.result-kicker b{font-size:9px;font-weight:600;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:4px 7px;white-space:nowrap}
+.outcome-grid h3{margin:10px 0 4px;font-size:19px;line-height:1.2;letter-spacing:-.02em;color:var(--ink)}
+.result-desc{margin:0;color:var(--mut);font-size:12px;line-height:1.5;max-width:580px}
+.outcome-grid .bars{height:132px;gap:12px;margin:14px 2px 8px;align-items:stretch}
+.outcome-grid .bc{gap:4px;opacity:1;min-width:0}
+.outcome-grid .bc em{font-style:normal;color:var(--ink);font-size:12px;font-weight:700}
+.outcome-grid .bw{height:82px;flex:none;align-items:flex-end;background:color-mix(in srgb,var(--line) 52%,transparent);border-radius:7px 7px 3px 3px;overflow:hidden}
+.outcome-grid .bw i{width:100%;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#9cb5c8,var(--a));transition:height .45s cubic-bezier(.2,.8,.2,1)}
+.outcome-grid .bc.p .bw i{background:linear-gradient(180deg,#82a9c4,#356f9d)}
+.outcome-grid .bc.d{opacity:.35}
+.outcome-grid .bc span{font:600 11px/1.2 "JetBrains Mono",monospace;color:var(--ink);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.panel-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:8px;color:var(--mut);font-size:10px}
+#ss{color:var(--a);font-weight:600}
+.answer-stage{display:flex;gap:12px;align-items:flex-start;margin:14px 0 13px;min-height:76px;padding:12px 13px;border:1px solid color-mix(in srgb,var(--c) 32%,var(--line));border-radius:11px;background:color-mix(in srgb,var(--card) 70%,var(--c) 8%)}
+.answer-mark{width:32px;height:32px;display:grid;place-items:center;flex:none;border-radius:9px;background:var(--c);color:#fffdf7;font:700 15px "Bricolage Grotesque",sans-serif}
+.answer-text{font-size:19px;line-height:1.45;font-weight:600;letter-spacing:-.015em;color:var(--ink);min-height:52px;padding-top:2px}
+.metrics-heading{font:600 9px "JetBrains Mono",monospace;letter-spacing:.08em;color:var(--mut);margin-bottom:6px}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0}
+.metrics-grid .met{display:flex;flex-direction:column;gap:2px;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--card) 82%,var(--fill))}
+.metrics-grid .met small{font-size:9px;line-height:1.25;color:var(--mut);margin:0}
+.metrics-grid .met b{font-size:12px;line-height:1.3;color:var(--ink);white-space:nowrap}
+@media(max-width:899px){.outcome-grid>.bx{min-height:230px;padding:14px}.outcome-grid h3{font-size:17px}.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-height:850px) and (min-width:900px){.outcome-grid>.bx{min-height:235px;padding:13px 15px}.outcome-grid .bars{height:118px}.outcome-grid .bw{height:70px}.answer-stage{margin:10px 0;min-height:64px}.answer-text{font-size:17px}.metrics-grid .met{padding:5px 7px}}
+@media(max-height:850px) and (min-width:900px){
+  #pin{padding-top:6px;padding-bottom:6px;gap:8px}
+  #left{gap:5px}
+  #stage{gap:5px}
+  #jm{padding:4px 8px}
+  #story{padding:6px 8px}
+  .token-panel{padding:6px 8px}
+  .token-pair .piece{font-size:10px}
+}
+
+</style></head><body>
+<header><b>OmegaMind: From Question to Answer</b><input id="pi" value="What is the capital of France?" aria-label="Enter a question"><button id="th" aria-label="Change theme">Theme</button></header>
+<div id="track"><div id="pin">
+<div id="left"><div id="stage">
+<div class="bx" id="jm"><small>THE JOURNEY · CONCEPT DEMONSTRATION · NOT A LIVE MODEL RUN</small><div id="jn"></div><div id="jr"><i id="pd"></i><span id="pb"></span></div><div id="jw"></div></div>
+<div class="r2"><div class="bx"><small>Your question</small><div id="tu" class="tx"></div></div><div class="bx"><small>Message prepared for OmegaMind</small><div id="tt" class="tx mono"></div></div></div>
+<div class="bx token-panel">
+  <div class="token-heading">
+    <div><span class="eyebrow">STEP 02 · TURNING TEXT INTO NUMBERS</span><h3>Your sentence is divided into small pieces</h3>
+      <p>A helper called a tokenizer breaks a sentence into small pieces. Each piece gets an ID number, like a library catalogue number that helps the computer find the right entry.</p></div>
+    <span class="demo-tag">ILLUSTRATIVE EXAMPLE</span>
+  </div>
+  <div class="token-labels"><span>1. Text piece</span><span>2. Its ID number</span></div>
+  <div class="chips" id="ch"></div>
+  <div class="token-foot"><span class="token-dot"></span><span><b>Remember:</b> The ID is a lookup number, not the meaning of the word. A piece can be a whole word, part of a word, punctuation mark, or space. The IDs and count shown here are examples, not results from a live tokenizer.</span></div>
+</div>
+<div class="bx" id="story" aria-live="polite">
+  <div class="story-head"><span class="eyebrow">WHAT IS HAPPENING NOW?</span><span id="story-count">STEP 01 / 08</span></div>
+  <div class="story-main"><div id="story-icon" class="story-icon">01</div><div><h3 id="story-title">You enter a question</h3><p id="story-copy">The website sends your message to OmegaMind. The model has received the question, but it has not produced an answer yet.</p></div></div>
+  <div class="story-flow" id="story-flow"></div>
+  <div class="story-takeaway"><b id="story-next-label">IN SIMPLE TERMS</b><span id="story-next">Your question has reached the system. The next step prepares it for the model.</span></div>
+</div>
+<div class="bx"><small>How the request reaches the model · technical view</small><div class="mono" id="l1"></div><div class="mono" id="l2"></div></div>
+<div class="r2" style="grid-template-columns:1.3fr 1fr">
+<div class="bx"><small>How the computer processes information · CPU <b class="mono" id="clk"></b></small><div class="pips" id="pips"></div><div class="ops" id="ops"></div><div id="cores"></div><div class="mono" id="jl"></div></div>
+<div class="bx"><small>Working memory (RAM) · model and saved information</small><div class="wb" id="wb"></div><small>Saved information reused between steps · simplified view</small><div class="kv" id="kv"></div></div></div>
+<div class="r2 outcome-grid">
+  <section class="bx prediction-card">
+    <div class="result-kicker"><span>01 · THE MODEL'S NEXT CHOICE</span><b>ILLUSTRATIVE EXAMPLE</b></div>
+    <h3>What could the model say next?</h3>
+    <p class="result-desc">OmegaMind compares several possible pieces of text, then chooses one. It repeats this process to build a complete answer.</p>
+    <div class="bars" id="bars"></div>
+    <div class="panel-foot"><span id="ss">Comparing possible next pieces</span><span>One piece at a time</span></div>
+  </section>
+  <section class="bx answer-card">
+    <div class="result-kicker"><span>02 · THE RESPONSE TAKES SHAPE</span><b>ILLUSTRATIVE EXAMPLE</b></div>
+    <h3>Here is the answer so far</h3>
+    <div class="answer-stage"><div class="answer-mark">A</div><div class="tx answer-text" id="rp"></div></div>
+    <div class="metrics-heading">EXAMPLE PERFORMANCE READOUT</div>
+    <div class="mets metrics-grid" id="mets"></div>
+  </section>
+</div>
+</div>
+<div id="cap"></div><div id="ctl"><button id="pl">Play</button><label for="spd">Playback speed</label><select id="spd" aria-label="Playback speed"><option value="0.25">0.25× · very slow</option><option value="0.5" selected>0.5× · slow</option><option value="0.75">0.75×</option><option value="1">1× · normal</option><option value="1.25">1.25× · fast</option></select><input type="range" id="sl" min="0" max="1000" value="0" aria-label="Pipeline position"></div><div id="rail"></div></div>
+<aside id="code"><div class="code-intro">TECHNICAL DETAILS · OPTIONAL</div><div id="cf"></div><pre id="pre"></pre></aside>
+</div></div>
+<script>
+const $=s=>document.querySelector(s),E=id=>document.getElementById(id),esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),seg=(p,a,b)=>clamp((p-a)/(b-a)),hs=n=>{n=Math.sin(n*127.1)*43758.5453;return n-Math.floor(n)};
+let UP=$("#pi").value;const SYS="System: You are OmegaMind, a helpful, thoughtful, and articulate AI assistant.\n",full=()=>SYS+"User: "+UP+"\nAssistant:";
+const KN={Hello:15496," world":995,":":25,"\n":198,".":13,"?":30,",":11," the":262," a":257," is":318,User:12982,System:11964,Assistant:48902};
+const tok=s=>(s.match(/ ?[A-Za-z]+|\s?\d+|\n|\s+|[^\sA-Za-z\d]/g)||[]).map(t=>{let id=KN[t],ill=0;if(id==null){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))>>>0;id=1000+h%48000;ill=1}return{t,id,ill}});
+const RP=[" The"," capital"," of"," France"," is"," Paris","."],NO=RP.length,ALT=[" London"," Rome"," Berlin"," Madrid"," Athens"];
+const PR=RP.map((_,k)=>{const pc=.62+.3*hs(k+1),q=[pc,...[.4,.28,.18,.14].map(x=>x*(1-pc))],n=[RP[k],...[0,1,2,3].map(i=>ALT[(k+i)%5])],r0=q.map(x=>x**.45),sr=r0.reduce((a,b)=>a+b);let c=0,ak=5;for(let i=0;i<5;i++){c+=q[i];if(c>=.85){ak=i+1;break}}return{q,r:r0.map(x=>x/sr),n,ak}});
+const FW=.35,SM=.6,B=[0,.08,.15,.21,.35,.43,.53,.95,1],OPS=["LN1","QKV+KV","attn","proj+LN2","MLP","lm_head"];
+const CODE=[
+{f:"app.py · chat_stream()",c:String.raw`@app.post("/api/chat")
+async def chat_stream(req: ChatRequest):
+    prompt_str = (
+        f"{SYSTEM_PROMPT}User: {req.message.strip()}\nAssistant:"
+        if req.is_first_turn
+        else f"\nUser: {req.message.strip()}\nAssistant:"
+    )`},
+{f:"app.py · chat_stream()",c:String.raw`token_ids = enc.encode_ordinary(prompt_str)
+tok_csv = ",".join(map(str, token_ids))
+cmd = (f"REQUEST|{req.session_id}|{tok_csv}|{req.max_tokens}|"
+       f"{req.temperature:.3f}|{req.top_k}|{stop_csv}|"
+       f"{req.top_p:.3f}|{req.repetition_penalty:.3f}\n")
+proc.stdin.write(cmd)
+proc.stdin.flush()`},
+{f:"inference.cpp · main() + handle_request()",c:String.raw`void* file_data = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+memcpy(&cfg, file_data, 5 * sizeof(int));  // layers, attention heads, embedding size, context length, vocabulary
+map_weights(file_data + 20, size - 20);    // pointers only; weights are not copied
+printf("READY\n");
+while (std::getline(std::cin, line))
+    if (line.rfind("REQUEST|", 0) == 0) handle_request(line);
+// handle_request()
+auto new_tokens = parse_ints(parts[2]);
+Session& sess = g_sessions[sess_id];   // k_cache, v_cache, pos
+double t0 = get_ms();                  // start the engine timer`},
+{f:"inference.cpp · forward_prefill_batch()",c:String.raw`dst[i] = te[i] + pe[i];       // wte[id] + wpe[pos]
+for (int l = 0; l < cfg.n_layer; l++) {
+    layer_norm(xn, x, ln1_w[l], ln1_b[l], C);
+    matmul_vec_serial(qkv, c_attn_w[l], xn, 3*C, C);  // Q, K, V
+    memcpy(kc + (start_pos+t)*C, qkv + C,   C*4);     // K to cache
+    memcpy(vc + (start_pos+t)*C, qkv + 2*C, C*4);     // V to cache
+    #pragma omp parallel for   // process attention heads in parallel
+    for (int h = 0; h < H; h++) { /* softmax(Q.K/sqrt(d)) . V */ }
+    // c_proj + residual, ln2, fc(4C), gelu, proj + residual
+}
+layer_norm(xn, x_last, ln_f_w, ln_f_b, C);
+matmul_vec(g_logits, lm_head_w, xn, vocab_size, C);`},
+{f:"inference.cpp · matmul_vec() (trimmed)",c:String.raw`#pragma omp parallel for schedule(static) if(M >= 64)
+for (int i = 0; i < M; i++) {          // process each output row
+    __m256 acc = _mm256_setzero_ps();
+    for (; j <= K-8; j += 8)            // process eight values at a time
+        acc = _mm256_fmadd_ps(_mm256_loadu_ps(row+j),
+                              _mm256_loadu_ps(x+j), acc);
+    _mm256_storeu_ps(t, acc);           // reduce the eight lanes...
+    s = t[0]+t[1]+t[2]+t[3]+t[4]+t[5]+t[6]+t[7];  // ...to one result
+    out[i] = s;
+}`},
+{f:"inference.cpp · forward() (decode, KV cache)",c:String.raw`forward(next, sess.pos, k_cache, v_cache);   // process one new token
+memcpy(kc + pos*C, k, C*4);  memcpy(vc + pos*C, v, C*4);  // append
+#pragma omp parallel for
+for (int h = 0; h < H; h++) {
+    for (int t = 0; t <= pos; t++)       // reuse earlier key values
+        attn[t] = dot_avx2_safe(qh, kc + t*C + h*hs, hs) * scale;
+    softmax_inplace(attn, pos+1);
+    for (int t = 0; t <= pos; t++)       // reuse earlier value data
+        weighted_acc_avx2(oh, vc + t*C + h*hs, attn[t], hs);
+}`},
+{f:"inference.cpp · sample_token()",c:String.raw`// 1) repetition penalty (last 64 tokens)
+if (g_logits[id] > 0) g_logits[id] /= rep_penalty; else g_logits[id] *= rep_penalty;
+// 2) temperature
+pairs[v] = { g_logits[v] * inv_temp, v };
+// 3) top-k
+std::partial_sort(pairs, pairs + K, pairs + vocab_size, by_logit_desc);
+softmax over K  ->  probs
+// 4) top-p (nucleus)
+if (cum_prob >= top_p) { active_k = j + 1; break; }
+// 5) random pick
+float r = rng_float();
+if (r < cum) { best = pairs[j].second; break; }`},
+{f:"inference.cpp + app.py: streaming and metrics",c:String.raw`printf("TOKEN %d %.2f %d\n", next, get_ms() - t0, sess.pos);  // C++ inference engine
+fflush(stdout);
+# app.py
+if ttft_ms is None: ttft_ms = elapsed_ms        # first token event defines engine TTFT
+byte_buffer.extend(vocab_bytes[tok_id]); chunk = byte_buffer.decode("utf-8")  # convert bytes to text
+tok_per_sec = gen_count / (elapsed_ms / 1000)
+ms_per_tok  = elapsed_ms / gen_count
+yield f"data: {json.dumps(payload)}\n\n"          # stream the update to the browser
+// index.html: marked.parse(rawMarkdown), updateDashboard(data)`}];
+const CAP=["This is a guided concept demonstration. The IDs, example choices, CPU activity, timings and sample answer are illustrative. They are not measurements from a live OmegaMind run.","The tokenizer divides the sentence into small pieces and assigns each piece an ID. The model receives these numbers instead of letters.","The service sends the numbered list to the C++ program that runs OmegaMind. The program receives the list and prepares to process it.","The model looks up 768 learned values for each piece. It adds position information and processes the information through 16 layers.","OmegaMind runs on the CPU. AVX2 can work on eight 32-bit values together, while OpenMP can share suitable tasks across CPU threads.","The model scores possible next pieces, narrows the choices using its settings, and selects one piece. It builds the answer one piece at a time.","The selected piece is processed. Its attention information is saved in system memory, and earlier saved information is reused for the next step.","The model repeats the same process to choose another piece. Each new piece extends the answer.","Python turns the returned ID into text, and the website adds that text to the answer on screen.","The example journey is complete. In a live run, the final answer comes from your own OmegaMind model."];
+const RN=["Question","Text pieces","Send numbers","Model work","Computer work","Choose next piece","Repeat the process","Answer"];
+let nP,TK,T,NC,NCV,CC,cur=-1,codeId=-1;
+function setup(){UP=$("#pi").value||UP;TK=tok("User: "+UP+"\nAssistant:").slice(0,12);nP=tok(full()).length;
+E.ch.innerHTML=TK.map((x,i)=>`<div class="token-pair" style="--i:${i}"><span class="piece">${esc(x.t.replace(/\n/g,"[line break]").replace(/^ /,"[space] "))}</span><span class="down">↓</span><span class="tid">Example ID ${x.id}</span></div>`).join("")+ (nP>TK.length?`<span class="token-more">+ ${nP-TK.length} more pieces</span>`:"");CC=[...E.ch.querySelectorAll('.token-pair')];
+T=[70+nP*1.3];for(let k=1;k<NO;k++)T[k]=T[k-1]+28+(k*7)%11;NC=nP+NO-1;NCV=Math.min(NC,46);
+E.kv.style.gridTemplateColumns=`repeat(${NCV},1fr)`;E.kv.innerHTML=Array(4*NCV).fill('<i class=g></i>').join("");render(P)}
+["tu","tt","ch","story-count","story-icon","story-title","story-copy","story-flow","story-next","story-next-label","jn","pd","pb","jw","l1","l2","clk","pips","ops","cores","jl","wb","kv","bars","ss","rp","mets","cap","sl","rail","pre","cf","pl","spd"].forEach(k=>{E[k]=E(k)});
+E.pips.innerHTML=Array(16).fill("<i></i>").join("");E.ops.innerHTML=OPS.map(o=>`<span>${o}</span>`).join("");
+E.wb.innerHTML=`<i style="flex:38.6"></i><i style="flex:.8"></i>`+Array(16).fill('<i style="flex:7"></i>').join("")+`<i style="flex:38.6"></i>`;
+const row=(l,n)=>`<div class=cr><em>${l}</em>${Array(8).fill("<span class=c>0</span>").join("")}</div>`;
+E.cores.innerHTML=row("Worker 1")+row("Input")+row("Running total")+row("Worker 2");
+E.bars.innerHTML=Array(5).fill("<div class=bc><em></em><div class=bw><i></i></div><span></span></div>").join("");
+const MN=["First piece","Total time","Pieces / second","Average time / piece","CPU activity","Saved position"];E.mets.innerHTML=MN.map(n=>`<span class=met><small>${n}</small><b>-</b></span>`).join("");
+E.rail.innerHTML=RN.map((n,i)=>`<button data-i=${i}>${n}</button>`).join("");
+const accL=(i,it,c)=>{let s=0;for(let k=0;k<=it;k++)s+=(hs(k*8+i+c)*2-1)*(hs(k*8+i+c+500)*2-1);return s};
+function st(p){let ph=0;for(let i=0;i<8;i++)if(p>=B[i])ph=i;const u=seg(p,B[ph],B[ph+1]);let tk=-1,tu=0,fw=0,sa=0,eu=0;
+if(ph==5){tk=0;tu=u;fw=1;sa=seg(u,0,.45);eu=seg(u,.45,1)}else if(ph==6){const x=u*(NO-1),f=Math.min(NO-2,Math.floor(x));tk=1+f;tu=x-f;fw=seg(tu,0,FW);sa=seg(tu,FW,SM);eu=seg(tu,SM,1)}else if(ph==7){tk=NO-1;tu=1;fw=sa=eu=1}
+const ne=ph<5?0:ph==5?(eu>=.85?1:0):ph==6?tk+(eu>=.85?1:0):NO;let L=-1;if(ph==3)L=u*17;else if(ph==4)L=1.3;else if(ph==6&&fw<1)L=fw*17;
+return{p,ph,u,tk,tu,fw,sa,eu,ne,L,done:ph==5||(ph==6&&fw>=1)||ph==7}}
+function cs(s){const{ph,u,tk,tu,L}=s,op=L>=0?(L<16?Math.floor(L%1*5):5):-1;
+const smp=su=>su<.15?[6,0,1]:su<.5?[6,2,3]:su<.7?[6,4,6]:su<.85?[6,7,8]:[6,9,11],em=e=>e<.4?[7,0,1]:e<.6?[7,3,4]:e<.8?[7,5,6]:[7,7,8];
+if(ph==0)return[0,2,6];if(ph==1)return u<.5?[1,0,0]:[1,1,1];if(ph==2)return u<.3?[1,2,6]:u<.55?[2,4,5]:u<.8?[2,7,8]:[2,9,9];
+if(ph==3){const m=[[2,2],[3,5],[6,7],[8,8],[8,8],[10,11]][op]||[0,1];return[3,...m]}
+if(ph==4)return[4,...(u<.1?[0,1]:u<.88?[3,5]:u<.95?[6,7]:[8,8])];
+if(ph==5)return s.eu>0?em(s.eu):smp(s.sa);
+if(ph==6){if(s.fw<1)return[5,...(op==1?[0,1]:op==2?[2,8]:[0,0])];return s.eu>0?em(s.eu):smp(s.sa)}return[7,5,6]}
+function clock(s){const{ph,tk,tu,p}=s,a=B[2]+.8*(B[3]-B[2]),b=B[5]+.45*(B[6]-B[5]);if(p<a)return 0;if(ph<5||(ph==5&&p<b))return T[0]*seg(p,a,b);if(ph==5)return T[0];if(ph==6)return T[tk-1]+(T[tk]-T[tk-1])*seg(tu,0,SM);return T[NO-1]}
+const JN=[["Website","Enter question"],["Service","Prepare message"],["Text helper","Number pieces"],["Local connection","Send list"],["Computer","Process request"],["Return connection","Send piece"],["Text helper","Make readable"],["Website","Show answer"]];
+E.jn.innerHTML=JN.map(n=>`<span>${n[0]}<br><small>${n[1]}</small></span>`).join("");
+function jr(s){const{ph,u,tk,fw,sa,eu,L}=s;let x=4,lab="",tx="";const op=L>=0?(L<16?Math.floor(L%1*5):5):-1,id=KN[RP[Math.max(tk,0)]]||1000+((tk+1)*977)%48000;
+if(ph==0){x=u<.45?0:u<.8?seg(u,.45,.8):1;lab=u<.45?UP:u<.8?"Sending your question":"Preparing the message";tx=u<.45?"You enter a question on the website.":u<.8?"The website sends your question to the service.":"The service prepares the message that OmegaMind will receive."}
+else if(ph==1){x=1+seg(u,0,.35);lab=u<.35?"Your sentence":"Example IDs: "+TK.slice(0,4).map(t=>t.id).join(", ")+"...";tx=u<.35?"The sentence is being divided into small pieces.":"Each piece receives a number so the model can look it up."}
+else if(ph==2){x=u<.35?2+seg(u,0,.35):u<.7?3+seg(u,.35,.7):4;lab=u<.7?"Numbered request":"Numbers received";tx=u<.35?"The IDs are placed into a request.":u<.7?"The request is passed to the program running OmegaMind.":"The model is ready to begin its calculations."}
+else if(ph==3){lab=L<.4?"Looking up learned values":`Information from ${nP} pieces`;tx=L<16?`The model is processing layer ${Math.floor(L)+1} of 16.`:"The model has finished processing the question and is preparing its next-piece choices."}
+else if(ph==4){lab="Groups of 8 numbers";tx="The CPU works on groups of numbers. Some tasks can be shared across CPU threads."}
+else if(ph==7){x=7;lab="Answer complete";tx="The finished answer is displayed on the website."}
+else if(eu>0){const q=seg(eu,0,.85);x=4+3*q;lab=q<.34?`Selected piece ID ${id}`:q<.67?"Number to text":q<1?`Sending text: "${RP[tk].trim()}"`:`Adding "${RP[tk].trim()}" to answer`;tx=q<.34?"The model has selected one piece for the answer.":q<.67?"The software looks up the piece and turns it into readable text.":q<1?"The text is being sent to the website.":"The website adds this piece to the answer."}
+else if(sa>0||ph==5){lab="Choosing the next piece";tx="The model compares possible pieces, applies its selection settings, and chooses one."}
+else{lab=`Processing piece · layer ${Math.min(16,Math.floor(L)+1)} of 16`;tx="The model saves useful attention information in RAM and reuses earlier saved information."}
+E.pd.style.left=(x+.5)/8*100+"%";E.pb.style.left=clamp((x+.5)/8*100,18,82)+"%";E.pb.textContent=lab;E.jw.textContent=tx;[...E.jn.children].forEach((e,i)=>e.className=Math.abs(x-i)<.5?"on":"")}
+function renderStory(s){
+  const {ph,u,tk,fw,sa,eu,L}=s;
+  const stories=[
+    {icon:"01",title:"You enter a question",copy:"The website sends your message to OmegaMind. The model has received the question, but it has not produced an answer yet.",take:"Your question has reached the system. The next step prepares it for the model.",nodes:[["01","Your question","The words you entered"],["02","The website","Sends your message"],["03","OmegaMind","Receives the request"]]},
+    {icon:"02",title:"Your sentence becomes numbered pieces",copy:"A helper called a tokenizer breaks your sentence into small pieces. A piece can be a whole word, part of a word, punctuation, or even a space. Each piece receives an ID number.",take:"Think of a library catalogue number. It helps the computer find the right entry; it does not explain what the word means.",nodes:[["01","Your sentence","Normal text"],["02","Small pieces","Words or word parts"],["03","ID numbers","A lookup number for each piece"]]},
+    {icon:"03",title:"The numbered list is sent to the model",copy:"The service sends the list of IDs to the C++ program that runs OmegaMind. The program now works with the numbers instead of the original sentence.",take:"It is like giving a production team a numbered order sheet. The instructions are ready, and the model can begin its work.",nodes:[["01","Numbered list","Token IDs"],["02","Request","The list is packaged"],["03","Model program","Receives the numbers"]]},
+    {icon:"04",title:"Each number looks up learned information",copy:"For every ID, OmegaMind looks up a row of 768 learned values. It adds information about where that piece appears, then passes the information through 16 processing layers.",take:"You do not need to read these values. They are the model's internal way of representing each piece and its place in the sentence.",nodes:[["01","ID number","Finds the right row"],["02","768 values","A learned numerical record"],["03","16 layers","Processes the information"],["04","Next-step scores","Suggests what may come next"]]},
+    {icon:"05",title:"The computer carries out the calculations",copy:"OmegaMind runs on the computer's main processor, called the CPU, and uses regular system memory, called RAM. It performs many number calculations. Some tasks can be shared across CPU threads.",take:"Think of a team dividing a large job into smaller tasks. This helps the computer handle suitable calculations efficiently. This inference engine runs on the CPU, not a GPU.",nodes:[["01","Number groups","Values ready to process"],["02","CPU","Performs calculations"],["03","CPU threads","Share suitable work"],["04","Results","Move to the next step"]]},
+    {icon:"06",title:"The model chooses one next piece",copy:"After processing the question, the model gives scores to possible next pieces. Its settings narrow the options, then it selects one piece. It does not create the full answer in one step.",take:"The model chooses one piece, adds it to the growing answer, and then chooses the next. The bars in this example are illustrations, not live probabilities.",nodes:[["01","Possible pieces","Many choices"],["02","Shortlist","Fewer choices remain"],["03","One selection","The next piece"]]},
+    {icon:"07",title:"It saves useful information for the next step",copy:"The model saves attention information for the pieces it has already processed. This is called the KV Cache, and it is stored in system RAM. The next step can reuse it instead of repeating the same calculations.",take:"Think of keeping notes while reading a long report. You refer to the notes instead of starting again from page one. The newly selected piece is saved after the model processes it.",nodes:[["01","New piece","Selected by the model"],["02","Save information","Stored in system RAM"],["03","Reuse notes","Earlier work is available"],["04","Repeat","Choose the next piece"]]},
+    {icon:"08",title:"The numbers become readable text",copy:"The C++ program returns a token ID. Python looks up the matching bytes in tokenizer.bin and turns them into text. The website adds that text to the answer on screen.",take:"The model produces numbered pieces. The surrounding software turns those pieces back into words you can read. This repeats until the answer is complete.",nodes:[["01","Token ID","Number from the model"],["02","Text bytes","Looked up in tokenizer.bin"],["03","Readable text","Turned into characters"],["04","Your answer","Displayed on the website"]]}
+  ];
+  const idx=ph, item=stories[idx]||stories[7];
+  let active=0;
+  if(ph===0) active=u<.36?0:u<.72?1:2;
+  else if(ph===1) active=u<.28?0:u<.68?1:2;
+  else if(ph===2) active=u<.3?0:u<.68?1:2;
+  else if(ph===3) active=L<.25?0:L<.7?1:L<15.8?2:3;
+  else if(ph===4) active=u<.25?0:u<.65?1:2;
+  else if(ph===5) active=u<.28?0:u<.72?1:2;
+  else if(ph===6) active=fw<1?0:sa<1?1:eu<1?2:3;
+  else active=3;
+  E['story-count'].textContent=`STEP ${String(idx+1).padStart(2,'0')} / 08`;
+  E['story-icon'].textContent=item.icon;
+  E['story-title'].textContent=item.title;
+  E['story-copy'].textContent=item.copy;
+  E['story-next'].textContent=item.take;
+  E['story-next-label'].textContent=ph===1?"REMEMBER":"IN SIMPLE TERMS";
+  E['story-flow'].innerHTML=item.nodes.map((n,i)=>`${i?'<span class="flow-arrow">→</span>':''}<div class="flow-node ${i<active?'done ':''}${i===active?'active':''}"><span class="flow-symbol">${n[0]}</span><b>${n[1]}</b><small>${n[2]}</small></div>`).join('');
+  const visible=ph<1?0:ph===1?Math.ceil(u*CC.length):CC.length;
+  CC.forEach((c,i)=>{c.classList.toggle('show',i<visible);c.classList.toggle('active',i===Math.max(0,Math.min(CC.length-1,Math.floor(u*CC.length)))&&ph===1)});
+}
+let P=0;
+function render(p){P=p;const s=st(p),{ph,u,tk,tu,fw,sa,eu,ne,L}=s,F=full();
+const uc=ph==0?Math.floor(seg(u,0,.4)*UP.length):UP.length;E.tu.textContent=UP.slice(0,uc)+(ph==0&&uc<UP.length?"▍":"");
+E.tt.textContent=ph==0?F.slice(0,Math.floor(seg(u,.4,1)*F.length)):F;
+renderStory(s);
+const ids=tok(F).length;const rq=`Request ready: ${ids} numbered pieces + answer settings`;
+E.l1.textContent=ph<2?"":ph==2?rq.slice(0,Math.floor(seg(u,0,.7)*rq.length)):rq;
+const lt=(ph==5||ph==6)&&eu>.15?tk+1:ne;E.l2.textContent=ph==7?"Example status: answer complete":lt>0?`Example selected piece: ID ${KN[RP[lt-1]]||1000+(lt*977)%48000} · ${T[lt-1].toFixed(1)} ms`:"";
+jr(s);
+
+E.clk.textContent=ph>=2?`  example elapsed time: ${clock(s).toFixed(1)} ms`:"";
+const op=L>=0?(L<16?Math.floor(L%1*5):5):-1;
+[...E.pips.children].forEach((e,i)=>e.className=L>=0&&L<16?(i<Math.floor(L)?"dn":i==Math.floor(L)?"on":""):L>=16||s.done?"dn":"");
+[...E.ops.children].forEach((e,i)=>e.className=i==op?"on":"");
+const hot=ph==4||op==1||op==4||op==5,it=ph==4?Math.floor(u*96):Math.floor(p*480)%96;
+[...E.cores.children].forEach((r,ri)=>[...r.children].slice(1).forEach((c,i)=>{const v=ri==0?hs(it*8+i)*2-1:ri==1?hs(it*8+i+500)*2-1:accL(i,it,ri==2?0:1000);c.textContent=v.toFixed(1);c.className="c"+(hot?" h":"")}));
+E.jl.textContent=hot?`Group ${it+1} of 96 · processing eight values together`:"";
+const bi=L>=0&&L<16?Math.floor(L):-1;[...E.wb.children].forEach((e,i)=>e.className=(i==0&&L>=0&&L<.3)||(i>=2&&i<18&&i-2==bi)||(i==19&&L>=16)?"h":"");
+let Fc=ph<3?0:ph==3?Math.floor(seg(u,0,.85)*nP):ph<6?nP:ph==6?nP+tk-1+(fw>.3?1:0):NC,nw=ph==3&&Fc>0&&Fc<nP?Fc-1:ph==6&&fw>.3&&fw<1?nP+tk-1:-1;
+const rd=op==2?Math.floor(seg(L%1*5,2,3)*Fc)-1:-1,sc=x=>Math.min(NCV-1,Math.floor(x*NCV/NC)),Fv=Math.round(Fc*NCV/NC);
+[...E.kv.children].forEach((e,i)=>{const c=i%NCV;e.className="g"+(c<Fv?(nw>=0&&c==sc(nw)?" n":rd>=0&&c<=sc(rd)?" r":" k"):"")});
+let kb=-1,su=0;if(ph==5){kb=0;su=sa}else if(ph==6){if(fw<1){kb=tk-1;su=1.2}else{kb=tk;su=sa}}else if(ph==7){kb=NO-1;su=1.2}
+[...E.bars.children].forEach((e,i)=>{if(kb<0){e.className="bc";e.children[0].textContent="";e.children[1].firstChild.style.height="2px";e.children[2].textContent="";return}
+const d=PR[kb],v=d.r[i]+(d.q[i]-d.r[i])*seg(su,.15,.5);e.className="bc"+(su>.55&&i>=d.ak?" d":"")+(su>.85&&i==0?" p":"");
+e.children[0].textContent=v.toFixed(2);e.children[1].firstChild.style.height=Math.max(2,v*100)+"%";e.children[2].textContent=d.n[i].replace("\n","↵")});
+E.ss.textContent=kb<0?"":su<.15?"· comparing possible pieces":su<.5?"· adjusting the choices":su<.85?"· keeping the strongest options":"· selecting one piece";
+E.rp.textContent=RP.slice(0,ne).join("");
+const m=E.mets.children,e=ne>0?T[ne-1]:0,set=(i,v)=>m[i].lastChild.textContent=v;
+set(0,ne>0?T[0].toFixed(1)+" ms":"-");set(1,ne>0?e.toFixed(1)+" ms":"-");set(2,ne>0?(ne/(e/1000)).toFixed(1):"-");set(3,ne>0?(e/ne).toFixed(1)+" ms":"-");set(4,ph>=3&&ph<7?(55+35*hs(Math.floor(p*80))).toFixed(0)+"%":"4%");set(5,ph>=3?(nP+Math.max(0,ne-1))+" / 1024":"0 / 1024");
+E.cap.textContent=ph==6?CAP[fw<1?6:eu>0?8:7]:ph==5?CAP[eu>0?8:5]:CAP[ph==7?9:ph];
+[...E.rail.children].forEach((b,i)=>b.className=i==ph?"on":"");E.sl.value=p*1000;
+const[ci,a,b2]=cs(s);if(ci!==codeId){codeId=ci;E.cf.textContent=CODE[ci].f;E.pre.innerHTML=CODE[ci].c.split("\n").map(l=>`<span class=l>${esc(l)}</span>`).join("")}
+const ls=E.pre.children;for(let i=0;i<ls.length;i++)ls[i].className="l"+(i>=a&&i<=b2?" on":"");
+const f=ls[a];if(f&&(f.offsetTop<E.pre.scrollTop||f.offsetTop>E.pre.scrollTop+E.pre.clientHeight-40))E.pre.scrollTop=f.offsetTop-30}
+const tr=E("track"),pin=E("pin"),span=()=>tr.offsetHeight-pin.offsetHeight,pos=()=>clamp((scrollY-tr.offsetTop)/Math.max(1,span()));
+const go=p=>scrollTo(0,tr.offsetTop+p*span());
+addEventListener("scroll",()=>render(pos()),{passive:true});addEventListener("resize",()=>render(pos()));
+E.sl.oninput=()=>go(E.sl.value/1000);E.rail.onclick=e=>{const i=e.target.dataset.i;if(i!=null)go(Math.min(.999,B[i]+.003))};
+$("#pi").oninput=()=>setup();$("#th").onclick=()=>{const r=document.documentElement,d=(r.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"))=="dark";r.dataset.theme=d?"light":"dark"};
+/* Playback controller: one cancellable animation loop at a time.
+   A run token prevents an old, already-queued frame from restarting after
+   a quick Pause → Play sequence (the source of runaway playback speed). */
+let playing=false, playbackRaf=null, playbackRun=0, lastFrameTime=null;
+const BASE_VIEWPORTS_PER_SECOND=.55;
+function stopPlayback(){
+  playing=false;
+  playbackRun++; // invalidates every callback from an earlier run
+  if(playbackRaf!==null) cancelAnimationFrame(playbackRaf);
+  playbackRaf=null;
+  lastFrameTime=null;
+  E.pl.textContent="Play";
+}
+function playbackFrame(now,runId){
+  if(!playing || runId!==playbackRun) return;
+  if(lastFrameTime===null) lastFrameTime=now;
+  // Cap a delayed frame so returning from a busy frame never causes a jump.
+  const dt=Math.min(32,Math.max(0,now-lastFrameTime))/1000;
+  lastFrameTime=now;
+  const speed=Math.max(.1,Math.min(1.5,Number(E.spd.value)||.5));
+  const maxScroll=Math.max(0,document.documentElement.scrollHeight-innerHeight);
+  const nextY=Math.min(maxScroll,window.scrollY+innerHeight*BASE_VIEWPORTS_PER_SECOND*speed*dt);
+  // Force instant scrolling; browser smooth-scroll settings must not stack
+  // a second animation on top of this frame-by-frame controller.
+  window.scrollTo(0,nextY);
+  if(pos()>=.999 || nextY>=maxScroll-1){stopPlayback();return;}
+  playbackRaf=requestAnimationFrame(t=>playbackFrame(t,runId));
+}
+function startPlayback(){
+  if(playing) return; // ignore duplicate starts
+  if(pos()>=.999) go(0);
+  playing=true;
+  const runId=++playbackRun;
+  lastFrameTime=null;
+  E.pl.textContent="Pause";
+  playbackRaf=requestAnimationFrame(t=>playbackFrame(t,runId));
+}
+E.pl.onclick=()=>{if(playing) stopPlayback(); else startPlayback();};
+// If the user takes manual control, stop Play rather than letting the two
+// sources of scrolling fight each other.
+for(const eventName of ["wheel","touchstart","pointerdown","keydown"]){
+  window.addEventListener(eventName,e=>{
+    if(!playing) return;
+    // Play/Pause and speed controls must remain usable while playback is active.
+    if(e.target.closest && e.target.closest("#pl, #spd")) return;
+    if(eventName==="keydown" && !["ArrowUp","ArrowDown","PageUp","PageDown","Home","End"," "].includes(e.key)) return;
+    stopPlayback();
+  },{passive:true});
+}
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing) stopPlayback();});
+window.addEventListener("pagehide",()=>{if(playing) stopPlayback();});
+setup();render(pos());
+</script></body></html>

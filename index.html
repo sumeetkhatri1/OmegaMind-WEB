@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="omegamind-api-base" content="https://not-omega-omegamind.hf.space">
+  <meta name="theme-color" content="#f3efe3">
+  <meta name="description" content="OmegaMind is a 152.8M-parameter language model with a custom C++17 CPU inference engine. Explore how it works and try it live.">
+  <title>OmegaMind — A language model you can look inside</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --paper:#f3efe3; --paper-deep:#eae4d5; --card:#fbf9f1; --ink:#29291f;
+      --muted:#777365; --line:#d8d1c1; --blue:#7894a6; --blue-pale:#e4ebed;
+      --sage:#7f8e75; --sage-pale:#e8ece2; --clay:#b9795b; --clay-pale:#f1e5dc;
+      --gold:#a5874b; --gold-pale:#f0e9d8; --shadow:0 18px 50px rgba(62,55,39,.07);
+      --serif:'Newsreader', Georgia, serif; --sans:'DM Sans', Arial, sans-serif; --mono:'DM Mono', monospace;
+      --max:1240px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:88px}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    ::selection{background:#d9e2de;color:var(--ink)}
+    .wrap{width:min(calc(100% - 48px),var(--max));margin-inline:auto}
+    .mono{font-family:var(--mono)}
+    .eyebrow{display:inline-flex;align-items:center;gap:9px;color:var(--muted);font:500 10px/1.2 var(--mono);letter-spacing:.15em;text-transform:uppercase}
+    .eyebrow:before{content:"";width:19px;height:1px;background:var(--clay)}
+    .site-header{height:76px;display:flex;align-items:center;border-bottom:1px solid rgba(119,115,101,.22);background:rgba(243,239,227,.94);position:sticky;top:0;z-index:30;backdrop-filter:blur(12px)}
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .brand{display:flex;align-items:center;gap:11px;min-width:205px}
+    .brand-mark{width:30px;height:30px;border:1px solid var(--ink);border-radius:50%;display:grid;place-items:center;position:relative}
+    .brand-mark:before{content:"";width:11px;height:11px;border:1px solid var(--clay);border-radius:50%;position:absolute;transform:translate(4px,-3px)}
+    .brand-mark span{font:500 10px var(--mono);position:relative;left:-2px;top:2px}
+    .brand-name{display:block;font:600 14px var(--mono);letter-spacing:.04em}
+    .brand-sub{display:block;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+    .nav-links{display:flex;align-items:center;gap:27px;color:#5f5d52;font-size:12px}
+    .nav-links a{transition:color .2s}.nav-links a:hover{color:var(--clay)}
+    .nav-cta{border:1px solid var(--ink);padding:9px 14px;border-radius:3px;font-size:11px;letter-spacing:.04em;transition:background .2s,color .2s}
+    .nav-cta:hover{background:var(--ink);color:var(--card)}
+    .hero{padding:82px 0 66px;position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;width:570px;height:570px;border:1px solid rgba(121,148,166,.18);border-radius:50%;right:-250px;top:-300px;pointer-events:none}
+    .hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:70px;align-items:center;position:relative;z-index:1}
+    .hero h1{font:400 clamp(48px,6.5vw,82px)/.99 var(--serif);letter-spacing:-.045em;margin:24px 0 24px;max-width:650px}
+    .hero h1 em{font-style:normal;color:var(--sage)}
+    .hero-copy{max-width:560px;color:#666355;font-size:16px;line-height:1.8}
+    .hero-actions{display:flex;align-items:center;gap:13px;margin-top:31px;flex-wrap:wrap}
+    .button{min-height:45px;display:inline-flex;align-items:center;justify-content:center;gap:14px;padding:0 17px;border:1px solid var(--ink);border-radius:3px;font-size:12px;font-weight:600;transition:transform .2s,background .2s,color .2s}
+    .button:hover{transform:translateY(-2px)}
+    .button.primary{background:var(--ink);color:var(--card)}.button.primary:hover{background:#45463a}
+    .button.secondary{background:transparent}.button.secondary:hover{background:var(--paper-deep)}
+    .button .arrow{font:16px var(--sans);line-height:1}
+    .hero-note{margin-top:27px;display:flex;align-items:center;gap:10px;color:var(--muted);font:10px var(--mono);letter-spacing:.04em}
+    .live-dot{width:7px;height:7px;background:var(--sage);border-radius:50%;box-shadow:0 0 0 4px rgba(127,142,117,.13)}
+    .hero-art{min-height:410px;background:var(--card);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);position:relative;padding:22px;overflow:hidden}
+    .art-top{display:flex;justify-content:space-between;color:var(--muted);font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+    .art-canvas{height:316px;position:relative;margin-top:16px}
+    .node{position:absolute;z-index:1;background:#f7f4eb;border:1px solid var(--line);padding:12px 14px;min-width:132px;box-shadow:0 5px 16px rgba(43,40,31,.04)}
+    .art-connectors{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible}
+    .art-connectors path{fill:none;stroke:#aaa28f;stroke-width:1.2;vector-effect:non-scaling-stroke}
+    .art-connectors circle{fill:var(--clay)}
+    .node .node-label{font:10px var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+    .node strong{display:block;font:500 15px var(--serif);margin-top:4px}
+    .node small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+    .node.storage{left:3%;top:8%;width:42%;background:#f5f0e4}
+    .node.ram{right:2%;top:8%;width:45%;background:var(--blue-pale);border-color:#c7d5db}
+    .node.cpu{left:28%;bottom:8%;width:46%;background:var(--sage-pale);border-color:#cbd4c3}
+    .node.cpu strong{font-size:22px}
+    .art-line{position:absolute;border-top:1px solid #b8b19f;transform-origin:left center}
+    .art-line.a{left:45%;top:30%;width:23%;transform:rotate(0deg)}
+    .art-line.b{left:25%;top:46%;width:27%;transform:rotate(65deg)}
+    .art-line.c{right:24%;top:45%;width:28%;transform:rotate(115deg)}
+    .art-line:after{content:"";position:absolute;right:-1px;top:-3px;border:3px solid transparent;border-left-color:#9f9885}
+    .orbit-label{position:absolute;color:var(--muted);font:9px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+    .orbit-label.one{left:44%;top:20%}.orbit-label.two{left:5%;bottom:28%}.orbit-label.three{right:5%;bottom:28%}
+    .art-foot{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:13px;color:var(--muted);font:10px var(--mono)}
+    .stats-band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(251,249,241,.48)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr)}
+    .stat{padding:21px 24px;border-right:1px solid var(--line)}.stat:first-child{padding-left:0}.stat:last-child{border:0}
+    .stat strong{display:block;font:500 27px/1.1 var(--serif);letter-spacing:-.03em}.stat span{display:block;margin-top:6px;color:var(--muted);font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+    section{scroll-margin-top:92px}
+    .intro-section{padding:104px 0 112px}
+    .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:36px;margin-bottom:42px}
+    .section-head h2{font:400 clamp(36px,4.5vw,57px)/1.04 var(--serif);letter-spacing:-.035em;margin:14px 0 0;max-width:640px}
+    .section-head p{max-width:365px;color:var(--muted);font-size:13px;line-height:1.75;margin:0 0 3px}
+    .principles{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .principle{padding:27px 30px 29px 0;min-height:190px;border-right:1px solid var(--line);position:relative}
+    .principle:not(:first-child){padding-left:30px}.principle:last-child{border-right:0}
+    .principle .n{font:11px var(--mono);color:var(--clay)}
+    .principle h3{font:500 22px var(--serif);margin:25px 0 8px}
+    .principle p{font-size:12px;color:var(--muted);line-height:1.75;margin:0;max-width:320px}
+    .architecture{background:var(--paper-deep);padding:97px 0 104px;position:relative}
+    .architecture .section-head{margin-bottom:37px}
+    .architecture-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .arch-card{background:var(--card);border:1px solid #d8d0bf;padding:23px 23px 21px;min-height:260px;position:relative;overflow:hidden}
+    .arch-kicker{font:10px var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+    .arch-card h3{font:500 25px var(--serif);margin:17px 0 8px}
+    .arch-card p{font-size:12px;color:var(--muted);line-height:1.75;margin:0;max-width:310px}
+    .arch-visual{height:72px;display:flex;align-items:center;gap:5px;margin-top:23px}
+    .disk{width:55px;height:43px;border:1px solid #b6a98e;border-radius:3px;position:relative;background:#f3eddf}
+    .disk:before,.disk:after{content:"";position:absolute;left:8px;right:8px;height:1px;background:#b6a98e}.disk:before{top:13px}.disk:after{top:25px}
+    .flow-arrow{font:17px var(--sans);color:var(--muted);padding:0 4px}
+    .memory-stack{display:flex;gap:4px;align-items:end;height:52px}
+    .memory-stack i{display:block;width:13px;border:1px solid #a8bac2;background:#e2eaed;border-radius:2px 2px 0 0}
+    .memory-stack i:nth-child(1){height:23px}.memory-stack i:nth-child(2){height:34px}.memory-stack i:nth-child(3){height:45px}.memory-stack i:nth-child(4){height:31px}.memory-stack i:nth-child(5){height:40px}
+    .ram-label{font:10px var(--mono);color:#698293;margin-left:7px}
+    .cpu-bars{display:flex;gap:4px;align-items:end;height:53px}
+    .cpu-bars i{width:18px;border:1px solid #aab5a1;background:#e4eade;border-radius:2px 2px 0 0;animation:work 2.6s ease-in-out infinite alternate}
+    .cpu-bars i:nth-child(1){height:21px;animation-delay:.1s}.cpu-bars i:nth-child(2){height:40px;animation-delay:.5s}.cpu-bars i:nth-child(3){height:32px;animation-delay:.9s}.cpu-bars i:nth-child(4){height:47px;animation-delay:.3s}.cpu-bars i:nth-child(5){height:27px;animation-delay:.7s}.cpu-bars i:nth-child(6){height:36px;animation-delay:1.1s}
+    @keyframes work{to{transform:scaleY(.55);transform-origin:bottom}}
+    .arch-bottom{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:17px;padding-top:15px;border-top:1px solid var(--line);color:var(--muted);font:10px var(--mono)}
+    .journey-section{padding:108px 0 110px}
+    .journey-note{display:flex;justify-content:space-between;gap:28px;align-items:flex-end;margin-bottom:25px}
+    .journey-note h2{font:400 clamp(37px,4.4vw,56px)/1.03 var(--serif);letter-spacing:-.035em;margin:13px 0 0;max-width:610px}
+    .journey-note p{max-width:360px;margin:0;color:var(--muted);font-size:12px;line-height:1.8}
+    .journey-shell{border:1px solid var(--line);background:var(--card);padding:9px;box-shadow:var(--shadow)}
+    .journey-topline{display:flex;justify-content:space-between;gap:12px;padding:7px 9px 12px;color:var(--muted);font:10px var(--mono);letter-spacing:.04em}
+    .journey-frame{display:block;width:100%;height:min(1050px,115vh);border:1px solid var(--line);background:#f1efe8;overflow:hidden;scrollbar-width:none;-ms-overflow-style:none}
+    .journey-frame::-webkit-scrollbar{display:none;width:0;height:0}
+    .journey-loading{padding:18px 14px;border:1px dashed var(--line);color:var(--muted);font:11px var(--mono);background:#f7f4eb}
+    .journey-loading[hidden]{display:none}
+    .journey-caption{padding:11px 10px 4px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .try-section{background:#e9e5d8;padding:101px 0 110px}
+    .try-grid{display:grid;grid-template-columns:.78fr 1.22fr;gap:65px;align-items:start}
+    .try-copy h2{font:400 clamp(40px,5vw,62px)/1.02 var(--serif);letter-spacing:-.04em;margin:17px 0 18px}
+    .try-copy p{font-size:13px;color:#6e6a5d;line-height:1.8;max-width:390px}
+    .try-facts{margin-top:30px;border-top:1px solid #d1c9b8}
+    .try-fact{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid #d1c9b8;font-size:11px;color:#676457}
+    .try-fact strong{font:10px var(--mono);font-weight:500;color:#45463a}
+    .chat-panel{background:var(--card);border:1px solid #d4cdbc;box-shadow:0 16px 40px rgba(54,49,37,.06);min-height:510px;display:flex;flex-direction:column}
+    .chat-head{display:flex;justify-content:space-between;align-items:center;padding:17px 20px;border-bottom:1px solid var(--line)}
+    .chat-head strong{font:500 19px var(--serif)}
+    .engine-state{font:10px var(--mono);color:var(--muted);display:flex;align-items:center;gap:8px}
+    .engine-state:before{content:"";width:7px;height:7px;background:#b6a98e;border-radius:50%}
+    .engine-state.online:before{background:var(--sage)}.engine-state.busy:before{background:var(--clay);animation:blink .9s infinite alternate}
+    @keyframes blink{to{opacity:.3}}
+    .chat-log{padding:22px 20px;display:flex;flex-direction:column;gap:16px;min-height:290px;max-height:440px;overflow:auto}
+    .chat-empty{margin:auto;text-align:center;max-width:340px;color:var(--muted);font-size:12px;line-height:1.8}
+    .chat-empty strong{display:block;font:500 24px var(--serif);color:var(--ink);margin-bottom:7px}
+    .message{max-width:88%;display:flex;flex-direction:column;gap:4px;align-self:flex-start}
+    .message.user{align-self:flex-end;align-items:flex-end}
+    .message-label{font:9px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+    .message-body{padding:11px 14px;background:#f0ede4;border:1px solid #e0dacb;border-radius:3px 12px 12px 12px;font-size:13px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+    .message.user .message-body{background:var(--blue-pale);border-color:#d1dfe4;border-radius:12px 3px 12px 12px}
+    .message.assistant .message-body{background:#f8f6ef}
+    .message.error .message-body{background:var(--clay-pale);border-color:#e5c8b8;color:#784b38}
+    .chat-progress{border-top:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;gap:9px;color:var(--muted);font:10px var(--mono);min-height:39px}
+    .progress-mark{width:6px;height:6px;border-radius:50%;background:var(--sage)}
+    .chat-metrics{display:flex;gap:16px;flex-wrap:wrap;padding:0 20px 12px;color:var(--muted);font:10px var(--mono)}
+    .chat-metrics span b{color:#4f5145;font-weight:500}
+    .chat-form{border-top:1px solid var(--line);padding:15px 17px 17px}
+    .prompt-box{display:flex;gap:9px;align-items:stretch}
+    .prompt-box textarea{flex:1;min-height:56px;max-height:140px;resize:vertical;border:1px solid var(--line);border-radius:3px;padding:12px 13px;background:#fffdf7;color:var(--ink);font-size:12px;outline:none}
+    .prompt-box textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(120,148,166,.12)}
+    .send-button{border:1px solid var(--ink);background:var(--ink);color:#fbf9f1;padding:0 17px;border-radius:3px;font-size:11px;font-weight:600;min-width:115px;transition:background .2s}
+    .send-button:hover{background:#4b4b40}.send-button:disabled{opacity:.45;cursor:wait}
+    .chat-disclaimer{margin-top:9px;color:var(--muted);font-size:10px}
+    .prompts{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+    .prompt-chip{background:transparent;border:1px solid var(--line);border-radius:20px;padding:6px 10px;color:#6f6b5e;font-size:10px;transition:all .2s}
+    .prompt-chip:hover{background:var(--blue-pale);border-color:#bdcbd0;color:var(--ink)}
+    .opportunities{padding:100px 0 80px}
+    .opportunity-card{border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1.1fr .9fr;gap:50px;padding:38px 0 40px}
+    .opportunity-card h2{font:400 clamp(42px,5.6vw,69px)/.98 var(--serif);letter-spacing:-.04em;margin:14px 0 18px;max-width:640px}
+    .opportunity-card p{color:var(--muted);font-size:13px;max-width:490px;line-height:1.8;margin:0}
+    .opportunity-side{display:flex;flex-direction:column;justify-content:space-between;gap:30px;padding:7px 0}
+    .opportunity-links{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .op-link{border:1px solid var(--line);padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;transition:background .2s,border-color .2s}
+    .op-link:hover{background:var(--sage-pale);border-color:#b8c4af}
+    .op-link small{font:9px var(--mono);color:var(--muted);display:block;margin-top:2px}
+    .op-link .out{font-size:15px;color:var(--clay)}
+    .op-contact{display:flex;align-items:center;justify-content:space-between;gap:15px;border-top:1px solid var(--line);padding-top:15px;font-size:11px}
+    .op-contact a{border-bottom:1px solid #b6a98e;padding-bottom:2px}
+    footer{border-top:1px solid var(--line);padding:20px 0 23px;color:var(--muted);font:10px var(--mono)}
+    .footer-row{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+    .reveal{opacity:0;transform:translateY(18px);transition:opacity .65s ease,transform .65s cubic-bezier(.2,.75,.25,1)}
+    .reveal.visible{opacity:1;transform:translateY(0)}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
+    @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:38px}.hero-art{max-width:680px;width:100%}.try-grid{grid-template-columns:1fr;gap:32px}.journey-note,.section-head{align-items:flex-start;flex-direction:column}.opportunity-card{grid-template-columns:1fr;gap:25px}.opportunity-side{max-width:650px}.nav-links{gap:14px}}
+    @media(max-width:620px){.wrap{width:min(calc(100% - 32px),var(--max))}.site-header{height:64px}.brand{min-width:0}.brand-sub,.nav-links a:not(.nav-cta){display:none}.nav-links{margin-left:auto}.hero{padding:58px 0 48px}.hero h1{font-size:52px}.hero-copy{font-size:14px}.hero-art{min-height:350px;padding:16px}.art-canvas{height:258px}.node{min-width:0;padding:9px}.node strong{font-size:13px}.node small{font-size:9px}.node.cpu strong{font-size:19px}.stats{grid-template-columns:1fr 1fr}.stat{padding:15px 12px;border-bottom:1px solid var(--line)}.stat:nth-child(2){border-right:0}.stat:nth-child(3){padding-left:0;border-bottom:0}.stat:nth-child(4){border-bottom:0}.stat strong{font-size:24px}.intro-section,.journey-section,.opportunities{padding:72px 0}.principles,.architecture-grid{grid-template-columns:1fr}.principle,.principle:not(:first-child){padding:21px 0;border-right:0;border-bottom:1px solid var(--line);min-height:0}.principle:last-child{border-bottom:0}.principle h3{margin:12px 0 7px}.architecture{padding:72px 0}.arch-card{min-height:220px}.journey-frame{height:740px}.journey-topline{font-size:9px}.try-section{padding:72px 0}.chat-panel{min-height:0}.chat-log{min-height:250px;padding:16px 13px}.chat-head{padding:14px}.chat-form{padding:12px}.prompt-box{flex-direction:column}.send-button{height:43px}.opportunity-links{grid-template-columns:1fr}.opportunity-card{padding:28px 0}.op-contact{align-items:flex-start;flex-direction:column}.footer-row{flex-direction:column;gap:8px}}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="OmegaMind home">
+        <span class="brand-mark"><span>Ω</span></span>
+        <span><span class="brand-name">OMEGAMIND</span><span class="brand-sub">A CPU-first language model</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#about">The idea</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#journey">Inside the model</a>
+        <a href="#try">Try it</a>
+        <a href="#opportunities" class="nav-cta">Open for opportunities <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="reveal">
+          <span class="eyebrow">An independent language-model project · 01 / 04</span>
+          <h1>A language model you can <em>look inside.</em></h1>
+          <p class="hero-copy">OmegaMind is a 152.8-million-parameter language model with its own training pipeline and a custom C++17 inference engine. It generates text on a CPU, using system memory for its model weights, working data and attention cache.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#try">Ask OmegaMind <span class="arrow">↗</span></a>
+            <a class="button secondary" href="#journey">Explore how it works <span class="arrow">↓</span></a>
+          </div>
+          <div class="hero-note"><span class="live-dot"></span><span>CPU INFERENCE · AVX2 · FMA3 · OPENMP · SYSTEM RAM</span></div>
+        </div>
+        <div class="hero-art reveal" aria-label="A simplified diagram showing model storage, system memory and CPU processing">
+          <div class="art-top"><span>Inside the machine</span><span>Inference path / 01</span></div>
+          <div class="art-canvas">
+            <div class="node storage"><span class="node-label">01 / Storage</span><strong>model.bin</strong><small>Trained weights on disk</small></div>
+            <div class="node ram"><span class="node-label">02 / Host memory</span><strong>System RAM</strong><small>Mapped weights · KV cache · buffers</small></div>
+            <div class="node cpu"><span class="node-label">03 / Compute</span><strong>CPU</strong><small>C++17 · AVX2/FMA · OpenMP</small></div>
+            <svg class="art-connectors" viewBox="0 0 600 316" aria-hidden="true">
+              <defs><marker id="flowArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#aaa28f" stroke-width="1"/></marker></defs>
+              <path d="M270 70 H316" marker-end="url(#flowArrow)"/>
+              <path d="M145 114 L226 211" marker-end="url(#flowArrow)"/>
+              <path d="M455 114 L374 211" marker-end="url(#flowArrow)"/>
+              <circle cx="145" cy="114" r="2.4"/><circle cx="455" cy="114" r="2.4"/>
+            </svg>
+            <span class="orbit-label one">Memory mapping</span><span class="orbit-label two">Load &amp; reuse</span><span class="orbit-label three">Calculate</span>
+          </div>
+          <div class="art-foot"><span>NO GPU INFERENCE</span><span>ONE TOKEN AT A TIME</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="stats-band">
+      <div class="wrap stats">
+        <div class="stat"><strong>152.8M</strong><span>Model parameters · approx.</span></div>
+        <div class="stat"><strong>16</strong><span>Transformer layers</span></div>
+        <div class="stat"><strong>12</strong><span>Attention heads</span></div>
+        <div class="stat"><strong>FP32</strong><span>Exported weight format</span></div>
+      </div>
+    </div>
+
+    <section class="intro-section" id="about">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div><span class="eyebrow">Start with the idea</span><h2>It takes a question apart, then builds an answer.</h2></div>
+          <p>A language model does not read a sentence in the same way a person does. It turns text into numbers, processes those numbers through learned layers, and predicts what should come next.</p>
+        </div>
+        <div class="principles reveal">
+          <article class="principle"><span class="n">01 / BREAK IT DOWN</span><h3>Words become pieces.</h3><p>The tokenizer splits a sentence into small pieces and assigns each piece a number. Those numbers are the model's input.</p></article>
+          <article class="principle"><span class="n">02 / PROCESS IT</span><h3>The CPU works through the numbers.</h3><p>OmegaMind looks up learned values, passes them through 16 Transformer layers and reuses information held in system RAM.</p></article>
+          <article class="principle"><span class="n">03 / BUILD IT BACK</span><h3>A response appears one piece at a time.</h3><p>The model selects a next piece, converts it back into text and repeats the process until the answer is complete.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="architecture" id="architecture">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div><span class="eyebrow">The system behind the answer</span><h2>Three parts. One continuous process.</h2></div>
+          <p>The design is intentionally CPU-first. The model file, its working memory and the calculations each have a distinct place in the system.</p>
+        </div>
+        <div class="architecture-grid reveal">
+          <article class="arch-card"><span class="arch-kicker">01 / The saved model</span><h3>Weights on storage</h3><p>The trained parameters live in <code>model.bin</code>. C++ maps the file into its address space instead of copying the entire file into another weight buffer.</p><div class="arch-visual"><span class="disk"></span><span class="flow-arrow">→</span><span class="ram-label">mapped into memory</span></div><div class="arch-bottom"><span>MODEL.BIN</span><span>MMAP</span></div></article>
+          <article class="arch-card"><span class="arch-kicker">02 / The working space</span><h3>System memory</h3><p>Host RAM holds the session's K and V attention cache and temporary buffers used while the CPU performs each calculation.</p><div class="arch-visual"><span class="memory-stack"><i></i><i></i><i></i><i></i><i></i></span><span class="ram-label">K / V + working buffers</span></div><div class="arch-bottom"><span>HOST RAM</span><span>96 MiB K/V ALLOCATION PER SESSION*</span></div></article>
+          <article class="arch-card"><span class="arch-kicker">03 / The calculation</span><h3>CPU execution</h3><p>AVX2 and FMA process groups of floating-point values. OpenMP distributes suitable loops across CPU threads.</p><div class="arch-visual"><span class="cpu-bars"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="ram-label">parallel work</span></div><div class="arch-bottom"><span>C++17</span><span>AVX2 · FMA · OPENMP</span></div></article>
+        </div>
+        <p class="mono" style="font-size:9px;color:var(--muted);margin-top:13px">* Based on 16 layers × 1,024 positions × 768 dimensions × FP32. This is the allocated K/V buffer capacity, not a claim about physical RAM residency.</p>
+      </div>
+    </section>
+
+    <section class="journey-section" id="journey">
+      <div class="wrap">
+        <div class="journey-note reveal">
+          <div><span class="eyebrow">A closer look · Interactive walkthrough</span><h2>Follow one question through OmegaMind.</h2></div>
+          <p>This is the original token-journey experience, kept as its own self-contained section. It is loaded inline so it can run inside the Hugging Face Space frame. Scroll inside it, pause the walkthrough or move through the stages at your own pace.</p>
+        </div>
+        <div class="journey-shell reveal">
+          <div class="journey-topline"><span>OMEGAMIND / ONE TOKEN JOURNEY</span><span>SCROLL WITHIN THE FRAME TO EXPLORE</span></div>
+          <iframe class="journey-frame" id="journeyFrame" title="OmegaMind interactive token journey" src="token-journey.html" loading="lazy" allow="clipboard-write" referrerpolicy="same-origin"></iframe>
+          <div class="journey-caption"><span>The original interactive walkthrough is displayed directly in this frame.</span><a href="token-journey.html" target="_blank" rel="noopener">Open the walkthrough in a new tab</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="try-section" id="try">
+      <div class="wrap try-grid">
+        <div class="try-copy reveal">
+          <span class="eyebrow">Your turn</span>
+          <h2>Ask the model. Watch it answer.</h2>
+          <p>Enter a question and send it to the OmegaMind inference engine running behind this page. The reply is streamed back as the model generates it.</p>
+          <div class="try-facts">
+            <div class="try-fact"><span>Inference engine</span><strong>C++17 / CPU</strong></div>
+            <div class="try-fact"><span>Input tokenizer</span><strong>GPT-2 TIKTOKEN</strong></div>
+            <div class="try-fact"><span>Parallel execution</span><strong>OPENMP</strong></div>
+            <div class="try-fact"><span>Memory</span><strong>HOST SYSTEM RAM</strong></div>
+          </div>
+        </div>
+        <div class="chat-panel reveal">
+          <div class="chat-head"><strong>Talk to OmegaMind</strong><span class="engine-state" id="engineState">Checking engine</span></div>
+          <div class="chat-log" id="chatLog" aria-live="polite">
+            <div class="chat-empty" id="chatEmpty"><strong>A question starts the process.</strong>Ask something, then watch the answer arrive from the model running on the Hugging Face Space.</div>
+          </div>
+          <div class="chat-progress" id="chatProgress"><span class="progress-mark"></span><span id="progressText">Waiting for a question</span></div>
+          <div class="chat-metrics" id="chatMetrics" hidden></div>
+          <form class="chat-form" id="chatForm">
+            <div class="prompt-box"><textarea id="promptInput" maxlength="12000" rows="2" placeholder="Ask OmegaMind a question..." aria-label="Message to OmegaMind" required></textarea><button class="send-button" id="sendButton" type="submit">Send to model ↗</button></div>
+            <div class="prompts"><button class="prompt-chip" type="button" data-prompt="Explain why the sky appears blue.">Why is the sky blue?</button><button class="prompt-chip" type="button" data-prompt="What is a good way to learn C++?">Learning C++</button><button class="prompt-chip" type="button" data-prompt="Explain how a CPU performs calculations.">How does a CPU work?</button></div>
+            <div class="chat-disclaimer">Responses come from OmegaMind's configured inference engine. Availability depends on the Hugging Face Space being awake and the model artifacts loading successfully.</div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="opportunities" id="opportunities">
+      <div class="wrap">
+        <div class="opportunity-card reveal">
+          <div>
+            <span class="eyebrow">Open for opportunities</span>
+            <h2>Interested in building systems that go beyond the demo?</h2>
+            <p>I'm open to conversations around inference engineering, efficient model execution, systems programming and applied AI. If you are building in this space, I'd be glad to connect.</p>
+          </div>
+          <div class="opportunity-side">
+            <div class="opportunity-links">
+              <a class="op-link" href="https://nanomind.qd.je" target="_blank" rel="noopener noreferrer"><span>Visit NanoMind<small>Another systems project</small></span><span class="out">↗</span></a>
+              <a class="op-link" href="https://github.com/sumeet1212khatri/OmegaMind" target="_blank" rel="noopener noreferrer"><span>Source on GitHub<small>OmegaMind repository</small></span><span class="out">↗</span></a>
+              <a class="op-link" href="https://www.linkedin.com/in/khatri-sumeet/" target="_blank" rel="noopener noreferrer"><span>Connect on LinkedIn<small>Professional profile</small></span><span class="out">↗</span></a>
+              <a class="op-link" href="mailto:sumeetkhatri1771@gmail.com"><span>Send an email<small>Direct contact</small></span><span class="out">↗</span></a>
+            </div>
+            <div class="op-contact"><span>For collaborations, roles or technical conversations</span><a href="mailto:sumeetkhatri1771@gmail.com">sumeetkhatri1771@gmail.com</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap footer-row"><span>OMEGAMIND · A CPU-FIRST LANGUAGE MODEL</span><span>Built to be examined, not just queried.</span><span>© <span id="year"></span> · Sumeet Khatri</span></div></footer>
+
+  <script>
+    (() => {
+      const $ = (selector) => document.querySelector(selector);
+      const chatLog = $('#chatLog');
+      const chatEmpty = $('#chatEmpty');
+      const form = $('#chatForm');
+      const promptInput = $('#promptInput');
+      const sendButton = $('#sendButton');
+      const engineState = $('#engineState');
+      const progressText = $('#progressText');
+      const chatMetrics = $('#chatMetrics');
+      const year = $('#year');
+      year.textContent = new Date().getFullYear();
+
+      // Always talk to the live Hugging Face Space. Never use file:// as the API host.
+      const HF_SPACE = 'https://not-omega-omegamind.hf.space';
+      const metaBase = (document.querySelector('meta[name="omegamind-api-base"]')?.content || '').trim();
+      const API_BASE = (metaBase || HF_SPACE).replace(/\/$/, '');
+      const apiUrl = (path) => `${API_BASE}${path}`;
+
+      let sessionId = `web_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+      let isFirstTurn = true;
+      let busy = false;
+
+      const setState = (state, label) => {
+        engineState.className = `engine-state ${state || ''}`.trim();
+        engineState.textContent = label;
+      };
+
+      const setProgress = (label) => { progressText.textContent = label; };
+
+      function addMessage(role, text = '') {
+        if (chatEmpty) chatEmpty.remove();
+        const wrapper = document.createElement('div');
+        wrapper.className = `message ${role}`;
+        const label = document.createElement('div');
+        label.className = 'message-label';
+        label.textContent = role === 'user' ? 'You' : role === 'error' ? 'Connection notice' : 'OmegaMind';
+        const body = document.createElement('div');
+        body.className = 'message-body';
+        body.textContent = text;
+        wrapper.append(label, body);
+        chatLog.appendChild(wrapper);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return body;
+      }
+
+      function updateMetrics(data) {
+        const items = [];
+        if (data.engine_ttft_ms != null) items.push(['Engine TTFT', `${data.engine_ttft_ms} ms`]);
+        if (data.engine_tokens_per_second_including_stop != null) items.push(['Generation rate', `${data.engine_tokens_per_second_including_stop} tok/s`]);
+        if (data.engine_total_ms != null) items.push(['Engine time', `${data.engine_total_ms} ms`]);
+        if (data.prompt_token_count != null) items.push(['Prompt pieces', `${data.prompt_token_count}`]);
+        if (data.visible_tokens != null) items.push(['Output pieces', `${data.visible_tokens}`]);
+        chatMetrics.replaceChildren();
+        for (const [label, value] of items) {
+          const span = document.createElement('span');
+          const b = document.createElement('b');
+          b.textContent = value;
+          span.textContent = `${label}: `;
+          span.appendChild(b);
+          chatMetrics.appendChild(span);
+        }
+        chatMetrics.hidden = items.length === 0;
+      }
+
+      async function checkEngine() {
+        try {
+          let response = await fetch(apiUrl('/api/info'), { cache: 'no-store' });
+          if (response.ok) {
+            const info = await response.json();
+            if (info.status === 'ok') {
+              setState('online', 'Engine available');
+              return;
+            }
+          }
+          // Backward compatibility: the original Space exposes /api/metrics, not /api/info.
+          response = await fetch(apiUrl('/api/metrics'), { cache: 'no-store' });
+          if (!response.ok) throw new Error(`Space status returned ${response.status}`);
+          const metrics = await response.json();
+          if (metrics.status === 'ok') setState('online', 'Engine available');
+          else setState('', 'Space reachable · engine unavailable');
+        } catch (error) {
+          setState('', 'Space connection unavailable');
+          console.warn('OmegaMind API status check failed:', apiUrl('/api/info'), error);
+        }
+      }
+
+      function handleEvent(event, assistantBody) {
+        // Original app.py stream format: {token: "...", ...} and {done: true, ...}.
+        // The newer instrumented backend uses {type: "token_decoded", ...}.
+        if (!event.type) {
+          if (event.error) throw new Error(event.error);
+          if (typeof event.token === 'string' && event.token.length) {
+            assistantBody.textContent += event.token;
+            chatLog.scrollTop = chatLog.scrollHeight;
+            updateMetrics({
+              engine_ttft_ms: event.ttft_ms,
+              engine_total_ms: event.total_ms,
+              engine_tokens_per_second_including_stop: event.tok_s,
+              visible_tokens: event.tokens
+            });
+            setState('busy', 'Generating answer');
+            setProgress('OmegaMind is generating the answer one piece at a time');
+          }
+          if (event.done) {
+            isFirstTurn = false;
+            updateMetrics({
+              engine_ttft_ms: event.ttft_ms,
+              engine_total_ms: event.total_ms,
+              engine_tokens_per_second_including_stop: event.tok_s,
+              visible_tokens: event.tokens
+            });
+            setProgress('Response complete');
+            setState('online', 'Engine available');
+            return true;
+          }
+          return false;
+        }
+
+        switch (event.type) {
+          case 'request_received':
+            setProgress('Question received by the OmegaMind backend');
+            setState('busy', 'Running inference');
+            break;
+          case 'chat_template_created':
+            setProgress('Preparing the conversation format');
+            break;
+          case 'tokenization_started':
+            setProgress('Breaking the prompt into numbered pieces');
+            break;
+          case 'tokenization_completed':
+            setProgress(`Prompt converted into ${event.prompt_token_count} pieces`);
+            break;
+          case 'token_ids_generated':
+            setProgress(`${event.prompt_token_count || event.tokens?.length || 'Prompt'} token IDs ready for the CPU engine`);
+            break;
+          case 'cpp_request_sent':
+            setProgress('Prompt sent to the C++ CPU inference engine');
+            break;
+          case 'prefill_started':
+            setProgress('The model is processing the full prompt');
+            break;
+          case 'prefill_completed':
+            setProgress('Prompt processing complete; preparing the next piece');
+            break;
+          case 'sampling_started':
+            setProgress('Choosing the next piece of the answer');
+            break;
+          case 'token_generated':
+            setProgress('A new output piece has been selected');
+            break;
+          case 'kv_cache_write_completed':
+            setProgress('The new piece has been added to the memory cache');
+            break;
+          case 'token_decoded':
+            if (event.text) {
+              assistantBody.textContent += event.text;
+              chatLog.scrollTop = chatLog.scrollHeight;
+            }
+            if (event.engine_ttft_ms != null) updateMetrics({
+              engine_ttft_ms: event.engine_ttft_ms,
+              engine_tokens_per_second_including_stop: event.tokens_per_second,
+              visible_tokens: event.visible_tokens
+            });
+            setProgress('OmegaMind is writing the answer');
+            break;
+          case 'response_completed':
+            isFirstTurn = false;
+            if (!assistantBody.textContent && event.text) assistantBody.textContent = event.text;
+            updateMetrics(event);
+            setProgress('Response complete');
+            setState('online', 'Engine available');
+            return true;
+          case 'execution_error':
+            throw new Error(event.message || 'The inference engine reported an error.');
+          default:
+            if (event.type) setProgress(event.type.replaceAll('_', ' '));
+        }
+        return false;
+      }
+
+      async function streamAnswer(message, assistantBody) {
+        const response = await fetch(apiUrl('/api/chat'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            message,
+            max_tokens: 256,
+            temperature: 0.25,
+            top_k: 8,
+            top_p: 0.85,
+            repetition_penalty: 1.18,
+            is_first_turn: isFirstTurn
+          })
+        });
+        if (!response.ok) {
+          let detail = `OmegaMind Space returned HTTP ${response.status} for /api/chat`;
+          try { const body = await response.json(); detail = body.detail || body.error || detail; } catch (_) {}
+          throw new Error(detail);
+        }
+        if (!response.body) throw new Error('This browser does not support streamed responses.');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let completed = false;
+        const consume = (packet) => {
+          const dataLine = packet.split(/\r?\n/).find(line => line.startsWith('data:'));
+          if (!dataLine) return;
+          const raw = dataLine.slice(5).trim();
+          if (!raw) return;
+          const event = JSON.parse(raw);
+          if (handleEvent(event, assistantBody)) completed = true;
+        };
+        while (true) {
+          const { value, done } = await reader.read();
+          buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+          let boundary;
+          while ((boundary = buffer.search(/\r?\n\r?\n/)) >= 0) {
+            const packet = buffer.slice(0, boundary);
+            const delimiter = buffer.slice(boundary).match(/^\r?\n\r?\n/)[0];
+            buffer = buffer.slice(boundary + delimiter.length);
+            consume(packet);
+          }
+          if (done) break;
+        }
+        if (buffer.trim()) consume(buffer);
+        if (!completed && !assistantBody.textContent.trim()) throw new Error('The stream ended before a response was completed.');
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const message = promptInput.value.trim();
+        if (!message || busy) return;
+        busy = true;
+        sendButton.disabled = true;
+        sendButton.textContent = 'Sending…';
+        chatMetrics.hidden = true;
+        addMessage('user', message);
+        const assistantBody = addMessage('assistant', '');
+        promptInput.value = '';
+        setProgress('Connecting to the model');
+        setState('busy', 'Connecting');
+        try {
+          await streamAnswer(message, assistantBody);
+        } catch (error) {
+          assistantBody.textContent = error instanceof TypeError
+            ? `Could not reach the OmegaMind Space API at ${apiUrl('/api/chat')}. The Space may be asleep, still starting, or blocking this website through CORS. Check the Space status and API configuration.`
+            : (error.message || 'Unable to reach OmegaMind.');
+          assistantBody.parentElement.classList.add('error');
+          setProgress('The request could not be completed');
+          setState('', 'Connection problem');
+        } finally {
+          busy = false;
+          sendButton.disabled = false;
+          sendButton.textContent = 'Send to model ↗';
+          promptInput.focus();
+          if (!engineState.classList.contains('online')) checkEngine();
+        }
+      });
+
+      document.querySelectorAll('[data-prompt]').forEach((button) => {
+        button.addEventListener('click', () => {
+          promptInput.value = button.dataset.prompt;
+          promptInput.focus();
+        });
+      });
+      promptInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach((element) => observer.observe(element));
+
+      // The walkthrough is served as a normal same-origin HTML page in the iframe.
+      // This avoids cross-origin fetch/srcdoc issues inside Hugging Face Spaces.
+      checkEngine();
+    })();
+  </script>
+</body>
+</html>

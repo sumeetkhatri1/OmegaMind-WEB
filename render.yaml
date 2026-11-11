@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: omegamind
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: OMEGAMIND_API_BASE
+        value: https://not-omega-omegamind.hf.space
