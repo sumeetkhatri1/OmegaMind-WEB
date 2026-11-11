@@ -449,5 +449,38 @@ for(const eventName of ["wheel","touchstart","pointerdown","keydown"]){
 }
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing) stopPlayback();});
 window.addEventListener("pagehide",()=>{if(playing) stopPlayback();});
+/* Auto-follow: once the token IDs are ready (step 2 onward), the left panel
+   scrolls by itself so the part that is currently active stays in view. */
+const stage=E("stage"),reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let wantTop=0,followRaf=null,lastPh=-1,heldPh=-1;
+const relTop=el=>el.getBoundingClientRect().top-stage.getBoundingClientRect().top+stage.scrollTop;
+const relBottom=el=>relTop(el)+el.offsetHeight;
+function followTarget(ph){
+  if(ph<2)return 0;                                   // typing + token pieces: stay at the top
+  const maxTop=Math.max(0,stage.scrollHeight-stage.clientHeight);
+  if(ph===7)return maxTop;                            // finished answer: show the very bottom
+  const off=E("jm").offsetHeight+7;                   // sticky journey bar sits above the content
+  const focus=ph===2?E("story"):ph===3?E("l1").parentElement:ph===4?E("pips").parentElement.parentElement:$(".outcome-grid");
+  let top=relTop(E("story"))-off;                     // "What is happening now?" right under the journey bar
+  top=Math.max(top,relBottom(focus)-stage.clientHeight+7); // but keep the active block fully visible
+  top=Math.min(top,relTop(focus)-off);
+  return clamp(top,0,maxTop);
+}
+function followTick(){
+  const d=wantTop-stage.scrollTop;
+  if(Math.abs(d)<1||reduceMotion){stage.scrollTop=wantTop;followRaf=null;return}
+  stage.scrollTop+=Math.sign(d)*Math.max(1,Math.abs(d)*.14);
+  followRaf=requestAnimationFrame(followTick);
+}
+function autoFollow(ph){
+  if(ph!==lastPh){lastPh=ph;heldPh=-1}                // a new step always resumes auto-follow
+  if(heldPh===ph)return;                              // the viewer scrolled this step by hand: leave it
+  wantTop=followTarget(ph);
+  if(followRaf===null)followRaf=requestAnimationFrame(followTick);
+}
+for(const ev of["wheel","touchmove","pointerdown"])stage.addEventListener(ev,()=>{heldPh=lastPh;if(followRaf!==null){cancelAnimationFrame(followRaf);followRaf=null}},{passive:true});
+const baseRender=render;
+render=function(p){baseRender(p);autoFollow(st(p).ph)};
+addEventListener("resize",()=>{heldPh=-1});
 setup();render(pos());
 </script></body></html>
